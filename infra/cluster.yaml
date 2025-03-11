@@ -1,0 +1,21 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: jenkins-eks-cluster
+  region: us-east-1
+iam:
+  withOIDC: true
+vpc:
+  id: "vpc-0124dbbb94b924902"
+  subnets:
+    private:
+      us-east-1a: { id: "subnet-0867103ed15b073df" }
+      us-east-1b: { id: "subnet-087761ade020f572e" }
+    public:
+      us-east-1a: { id: "subnet-071062a4f2300fa39" }
+      us-east-1b: { id: "subnet-0fc19161c7a2b12f1" }
+nodeGroups:
+  - name: ng-default
+    instanceType: t3.medium
+    desiredCapacity: 2
+    privateNetworking: true

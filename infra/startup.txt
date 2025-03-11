@@ -1,0 +1,13 @@
+terraform init
+terraform apply
+eksctl create cluster -f cluster.yaml
+kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
+kubectl apply -f efs-sc.yaml,efs-pv.yaml,efs-claim.yaml
+kubectl apply -f iamrole.yaml
+helm repo add stable https://charts.helm.sh/stable
+helm install jenkins stable/jenkins --set rbac.create=true,master.servicePort=80,master.serviceType=LoadBalancer,persistence.existingClaim=efs-claim
+printf $(kubectl get service jenkins -o jsonpath="{.status.loadBalancer.ingress[].hostname}");echo
+printf $(kubectl get secret jenkins -o jsonpath="{.data.jenkins-admin-password}" | base64 --decode);echo
+
+[deleting]
+helm uninstall jenkins
