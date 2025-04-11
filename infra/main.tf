@@ -6,70 +6,73 @@ module "vpc" {
   public_subnets  = ["10.0.1.0/24", "10.0.2.0/24"]
   private_subnets = ["10.0.3.0/24", "10.0.4.0/24"]
   enable_nat_gateway = true
+  map_public_ip_on_launch = true
 }
 
-resource "aws_efs_file_system" "jenkins_efs" {
-  creation_token   = "jenkins-efs"
-  performance_mode = "generalPurpose"
-  encrypted        = true
-  tags = {
-    Name = "jenkins-efs"
+resource "aws_ecr_repository" "cicd_test" {
+  name                 = "cicd_test"
+
+  image_scanning_configuration {
+    scan_on_push = true
   }
 }
 
-resource "aws_security_group" "efs_sg" {
-  name        = "efs-sg"
-  description = "Allow NFS access for EFS"
+resource "aws_security_group" "jenkins" {
+  name        = "jenkins"
   vpc_id      = module.vpc.vpc_id
 
-  ingress {
-    from_port   = 2049
-    to_port     = 2049
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+  tags = {
+    Name = "jenkins"
   }
 }
 
-resource "aws_efs_mount_target" "jenkins_mount_target_a" {
-  file_system_id  = aws_efs_file_system.jenkins_efs.id
-  subnet_id       = module.vpc.public_subnets[0]
-  security_groups = [aws_security_group.efs_sg.id]
+resource "aws_vpc_security_group_ingress_rule" "main" {
+  security_group_id = aws_security_group.jenkins.id
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 80
+  ip_protocol       = "tcp"
+  to_port           = 80
 }
 
-resource "aws_efs_mount_target" "jenkins_mount_target_b" {
-  file_system_id  = aws_efs_file_system.jenkins_efs.id
-  subnet_id       = module.vpc.public_subnets[1]
-  security_groups = [aws_security_group.efs_sg.id]
+resource "aws_vpc_security_group_ingress_rule" "jenkins" {
+  security_group_id = aws_security_group.jenkins.id
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 8080
+  ip_protocol       = "tcp"
+  to_port           = 8080
 }
 
-resource "aws_efs_access_point" "example" {
-  file_system_id = aws_efs_file_system.jenkins_efs.id
+resource "aws_vpc_security_group_egress_rule" "main" {
+  security_group_id = aws_security_group.jenkins.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+}
 
-  posix_user {
-    gid = 1000
-    uid = 1000
-  }
-
-  root_directory {
-    path = "/jenkins"
-
-    creation_info {
-      owner_gid    = 1000
-      owner_uid    = 1000
-      permissions  = "0777"
-    }
+resource "aws_instance" "web" {
+  instance_type = "t3.medium"
+  ami           = "ami-00a929b66ed6e0de6"
+  subnet_id     = module.vpc.public_subnets[0]
+  iam_instance_profile = "test-ssm"
+  vpc_security_group_ids = [aws_security_group.jenkins.id]
+  user_data     = <<EOF
+#!/bin/bash
+sudo yum update
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+sudo yum upgrade
+sudo yum install java-17-amazon-corretto -y
+sudo yum install jenkins -y
+sudo yum install git -y
+sudo yum install -y docker
+sudo service docker start
+sudo systemctl enable jenkins
+sudo systemctl start jenkins
+EOF
+  tags = {
+    Name = "jenkins"
   }
 }
 
 output "vpc_id"       { value = module.vpc.vpc_id }
 output "public_subnets"  { value = module.vpc.public_subnets }
 output "private_subnets" { value = module.vpc.private_subnets }
-output "efs_id" { value = aws_efs_file_system.jenkins_efs.id }
-output "efs_ap_id" { value = aws_efs_access_point.example.id }

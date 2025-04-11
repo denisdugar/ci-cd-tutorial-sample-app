@@ -1,4 +1,0 @@
-persistence:
-  enabled: true
-  storageClass: "efs-sc"
-  size: 10Gi
