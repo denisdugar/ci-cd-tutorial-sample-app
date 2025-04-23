@@ -1,0 +1,15 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Building&Delivery') {
+            steps {
+                sh '[ -d "./ci-cd-tutorial-sample-app" ] && rm -r ci-cd-tutorial-sample-app &&  git clone https://github.com/denisdugar/ci-cd-tutorial-sample-app.git || git clone https://github.com/denisdugar/ci-cd-tutorial-sample-app.git'
+                sh 'cd ci-cd-tutorial-sample-app && docker build -t cicd_test .'
+                sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 917024903431.dkr.ecr.us-east-1.amazonaws.com'
+                sh 'docker tag cicd_test:latest 917024903431.dkr.ecr.us-east-1.amazonaws.com/cicd_test:latest'
+                sh 'docker push 917024903431.dkr.ecr.us-east-1.amazonaws.com/cicd_test:latest'
+            }
+        }
+    }
+}

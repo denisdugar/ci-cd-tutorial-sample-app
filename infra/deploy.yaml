@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cicd-deployment
+  labels:
+    app: cicd
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cicd
+  template:
+    metadata:
+      labels:
+        app: cicd
+    spec:
+      serviceAccountName: ecr-service-account
+      containers:
+      - name: cicd
+        image: 917024903431.dkr.ecr.us-east-1.amazonaws.com/cicd_test:latest
+        ports:
+        - containerPort: 8000

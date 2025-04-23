@@ -48,11 +48,96 @@ resource "aws_vpc_security_group_egress_rule" "main" {
   ip_protocol       = "-1"
 }
 
+resource "aws_iam_role" "ecr_pull" {
+  name               = "ecr-pull-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_iam_policy" "ecr_push_pull_policy" {
+  name        = "ecr-push-pull-policy"
+  description = "Allow GetAuthorizationToken and full push/pull to specific ECR repo"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "AuthToken"
+        Effect   = "Allow"
+        Action   = "ecr:GetAuthorizationToken"
+        Resource = "*"
+      },
+      {
+        Sid    = "PushAndPull"
+        Effect = "Allow"
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload",
+          "ecr:PutImage",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage"
+        ]
+        Resource = "arn:aws:ecr:us-east-1:917024903431:repository/${aws_ecr_repository.cicd_test.name}"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "attach_ecr_policy" {
+  role       = aws_iam_role.ecr_pull.name
+  policy_arn = aws_iam_policy.ecr_push_pull_policy.arn
+}
+
+resource "aws_iam_role" "ec2_ssm_ecr_role" {
+  name               = "ec2-ssm-ecr-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "attach_ssm" {
+  role       = aws_iam_role.ec2_ssm_ecr_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy_attachment" "attach_ecr" {
+  role       = aws_iam_role.ec2_ssm_ecr_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
+}
+
+resource "aws_iam_instance_profile" "ec2_ssm_ecr_profile" {
+  name = "ec2-ssm-ecr-profile"
+  role = aws_iam_role.ec2_ssm_ecr_role.name
+}
+
 resource "aws_instance" "web" {
   instance_type = "t3.medium"
   ami           = "ami-00a929b66ed6e0de6"
   subnet_id     = module.vpc.public_subnets[0]
-  iam_instance_profile = "test-ssm"
+  iam_instance_profile = "ec2-ssm-ecr-profile"
   vpc_security_group_ids = [aws_security_group.jenkins.id]
   user_data     = <<EOF
 #!/bin/bash
@@ -65,6 +150,9 @@ sudo yum install jenkins -y
 sudo yum install git -y
 sudo yum install -y docker
 sudo service docker start
+sudo groupadd docker
+sudo usermod -aG docker jenkins
+newgrp docker
 sudo systemctl enable jenkins
 sudo systemctl start jenkins
 EOF
