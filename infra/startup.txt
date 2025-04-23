@@ -1,5 +1,5 @@
 terraform apply --auto-approve
-eksctl create cluster -f cluster.yaml
+eksctl create cluster --region us-east-1 -f cluster.yaml
 eksctl create iamserviceaccount --name ecr-service-account --namespace default --cluster jenkins-eks-cluster --attach-role-arn arn:aws:iam::917024903431:role/ecr-pull-role --approve
 kubectl apply -f deploy.yaml
 kubectl create namespace argocd
