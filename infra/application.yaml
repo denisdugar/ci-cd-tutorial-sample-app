@@ -14,7 +14,6 @@ spec:
     repoURL: https://github.com/denisdugar/ci-cd-tutorial-sample-app.git
     targetRevision: HEAD
     path: infra
-    kustomize: {}
   destination:
     server: https://kubernetes.default.svc
     namespace: default
