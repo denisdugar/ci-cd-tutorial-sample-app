@@ -14,9 +14,10 @@ spec:
       labels:
         app: cicd
     spec:
-      serviceAccountName: ecr-service-account
       containers:
       - name: cicd
-        image: 917024903431.dkr.ecr.us-east-1.amazonaws.com/cicd_test:latest
+        image: denisdugar/cicd-test:2
         ports:
         - containerPort: 8000
+      imagePullSecrets:
+        - name: regcred

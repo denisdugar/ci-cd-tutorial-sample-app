@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jenkins
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: |
+      jenkins=denisdugar/cicd-test:latest
+    argocd-image-updater.argoproj.io/myapp.update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-method: git
+spec:
+  project: default
+  syncPolicy:
+    automated:
+      prune:      true
+      selfHeal:   true
+  source:
+    repoURL: https://github.com/denisdugar/ci-cd-tutorial-sample-app.git
+    targetRevision: HEAD
+    path: infra
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
