@@ -1,6 +1,8 @@
 resources:
   - deploy.yaml
-
+  - cluster.yaml
+  - application.yaml
+  - crd.yaml
 images:
   - name: denisdugar/cicd-test
     newTag: "3"
