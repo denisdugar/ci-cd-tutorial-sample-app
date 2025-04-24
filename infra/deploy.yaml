@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: cicd
-        image: denisdugar/cicd-test:{{ .newTag }}
+        image: denisdugar/cicd-test
         ports:
         - containerPort: 8000
       imagePullSecrets:
