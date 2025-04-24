@@ -12,17 +12,5 @@ curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download
 chmod +x argocd
 sudo mv argocd /usr/local/bin/
 argocd admin initial-password -n argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/stable/manifests/install.yaml
-kubectl edit cm argocd-image-updater-config -n argocd
-data:
-  log.level: debug
-  registries.conf: |
-    registries:
-    - name: Docker Hub
-      prefix: docker.io
-      api_url: https://index.docker.io/v1
-      credentials: secret:argocd/regcred#.dockerconfigjson
-      defaultns: denisdugar
-      default: true
-kubectl rollout restart deployment argocd-image-updater -n argocd
+# give argocd access to github repo
 kubectl apply -f application.yaml
