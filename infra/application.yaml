@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd-image-updater.argoproj.io/image-list: cicd=denisdugar/cicd-test:*
     argocd-image-updater.argoproj.io/update-strategy: digest
-    argocd-image-updater.argoproj.io/write-back-method: argocd
+    argocd-image-updater.argoproj.io/write-back-method: git
 spec:
   project: default
   syncPolicy:

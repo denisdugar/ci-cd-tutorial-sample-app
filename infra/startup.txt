@@ -1,5 +1,5 @@
 terraform apply --auto-approve
-eksctl create cluster --region us-east-1 -f cluster.yaml
+eksctl create cluster -f cluster.yaml
 docker login
 kubectl create secret generic regcred --from-file=.dockerconfigjson=/home/denis/.docker/config.json --type=kubernetes.io/dockerconfigjson
 kubectl apply -f deploy.yaml
@@ -20,7 +20,7 @@ data:
     registries:
     - name: Docker Hub
       prefix: docker.io
-      api_url: https://registry-1.docker.io
+      api_url: https://index.docker.io/v1
       credentials: secret:argocd/regcred#.dockerconfigjson
       defaultns: denisdugar
       default: true
