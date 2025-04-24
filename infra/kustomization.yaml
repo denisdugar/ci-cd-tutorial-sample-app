@@ -3,4 +3,4 @@ resources:
 
 images:
   - name: denisdugar/cicd-test
-    newTag: 3
+    newTag: "3"
