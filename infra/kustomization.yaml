@@ -1,0 +1,6 @@
+resources:
+  - deploy.yaml
+
+images:
+  - name: denisdugar/cicd-test
+    newTag: 3
