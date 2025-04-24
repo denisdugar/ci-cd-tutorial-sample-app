@@ -2,4 +2,4 @@ resources:
   - deploy.yaml
 images:
   - name: denisdugar/cicd-test
-    newTag: 7
+    newTag: "7"

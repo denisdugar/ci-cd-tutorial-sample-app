@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: cicd
-        image: denisdugar/cicd-test:2
+        image: denisdugar/cicd-test:1
         ports:
         - containerPort: 8000
       imagePullSecrets:
