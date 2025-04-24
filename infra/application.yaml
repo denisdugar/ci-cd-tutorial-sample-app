@@ -4,6 +4,9 @@ metadata:
   name: jenkins
   namespace: argocd
   annotations:
+    argocd-image-updater.argoproj.io/git-branch: master
+    argocd-image-updater.argoproj.io/image-list: jenkins=denisdugar/cicd-test
+    argocd-image-updater.argoproj.io/write-back-method: git
 spec:
   project: default
   syncPolicy:
@@ -14,6 +17,7 @@ spec:
     repoURL: https://github.com/denisdugar/ci-cd-tutorial-sample-app.git
     targetRevision: HEAD
     path: infra
+    kustomize: {}
   destination:
     server: https://kubernetes.default.svc
     namespace: default
