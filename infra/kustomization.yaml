@@ -1,5 +1,6 @@
 resources:
   - deploy.yaml
+  - app-service.yaml
 images:
   - name: denisdugar/cicd-test
     newTag: "7"

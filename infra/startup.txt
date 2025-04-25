@@ -1,4 +1,7 @@
 terraform apply --auto-approve
+#setup jenkins:
+# install Docker plugin and set up installer
+# create 2 pipelines
 # change clusterconfig file with new network
 eksctl create cluster -f cluster.yaml
 docker login
