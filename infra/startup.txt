@@ -3,7 +3,7 @@ terraform apply --auto-approve
 eksctl create cluster -f cluster.yaml
 docker login
 kubectl create secret generic regcred --from-file=.dockerconfigjson=/home/denis/.docker/config.json --type=kubernetes.io/dockerconfigjson
-kubectl apply -f deploy.yaml
+kubectl apply -k .
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
@@ -32,7 +32,7 @@ data:
       credentials: pullsecret:argocd/dockerhub-secret
       defaultns: denisdugar
       default: true
-# past your github token into git-secret.yaml
-kubectl apply -f git-secret.yaml
+# add tocken to git-creds.yaml
+kubectl apply -f git-creds.yaml
 kubectl -n argocd rollout restart deployment argocd-image-updater
 kubectl logs -n argocd deployment/argocd-image-updater -f

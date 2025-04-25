@@ -8,5 +8,4 @@ metadata:
 stringData:
   url: https://github.com/denisdugar/ci-cd-tutorial-sample-app.git
   username: denisdugar
-  password: <github_token>
-
+  password: <git_tocken>

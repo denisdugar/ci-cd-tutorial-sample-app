@@ -1,0 +1,21 @@
+pipeline {
+  agent {
+    docker {
+      image 'python:3.9'
+      args  '--user root:root'
+    }
+  }
+  stages {
+    stage ('Gitclone') {
+      steps {
+        git 'https://github.com/denisdugar/ci-cd-tutorial-sample-app.git'
+      }
+    }
+    stage ('Test') {
+      steps {
+        sh 'pip install -r requirements.txt'
+        sh 'python -m unittest discover'
+      }
+    }
+  }
+}

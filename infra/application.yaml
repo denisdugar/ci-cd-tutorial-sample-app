@@ -8,6 +8,7 @@ metadata:
     argocd-image-updater.argoproj.io/image-list: jenkins=denisdugar/cicd-test
     argocd-image-updater.argoproj.io/write-back-method: git
     argocd-image-updater.argoproj.io/write-back-target: "kustomization"
+    argocd-image-updater.argoproj.io/jenkins.update-strategy: newest-build
 spec:
   project: default
   syncPolicy:
