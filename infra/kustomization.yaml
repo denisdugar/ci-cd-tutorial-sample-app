@@ -3,4 +3,4 @@ resources:
   - app-service.yaml
 images:
   - name: denisdugar/cicd-test
-    newTag: "7"
+    newTag: drrfz20x
