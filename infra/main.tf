@@ -74,26 +74,32 @@ resource "aws_iam_instance_profile" "ec2_ssm_ecr_profile" {
 
 resource "aws_instance" "web" {
   instance_type = "t3.medium"
-  ami           = "ami-00a929b66ed6e0de6"
+  ami           = "ami-084568db4383264d4"
   subnet_id     = module.vpc.public_subnets[0]
   iam_instance_profile = "ec2-ssm-ecr-profile"
   vpc_security_group_ids = [aws_security_group.jenkins.id]
   user_data     = <<EOF
 #!/bin/bash
-sudo yum update
-sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
-sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-sudo yum upgrade
-sudo yum install java-17-amazon-corretto -y
-sudo yum install jenkins -y
-sudo yum install git -y
-sudo yum install -y docker
-sudo service docker start
-sudo groupadd docker
-sudo usermod -aG docker jenkins
-newgrp docker
+sudo apt update
+sudo apt install fontconfig openjdk-21-jre -y
+sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc]" https://pkg.jenkins.io/debian-stable binary/ | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
+sudo apt-get update
+sudo apt-get install jenkins -y
 sudo systemctl enable jenkins
-sudo systemctl start jenkins
+sed -i 's/-Djava.net.preferIPv4Stack=true/-Djava.net.preferIPv4Stack=true -Djenkins.install.runSetupWizard=false/g' /etc/default/jenkins
+echo "2.0" > /var/lib/jenkins/jenkins.install.UpgradeWizard.state
+mkdir /var/lib/jenkins/init.groovy.d
+sudo apt install unzip
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+aws ssm get-parameter \
+    --name "jenkins-user" \
+    --with-decryption \
+    --query "Parameter.Value" \
+    --output text > /var/lib/jenkins/init.groovy.d/basic-security.groovy
+sudo systemctl restart jenkins
 EOF
   tags = {
     Name = "jenkins"
