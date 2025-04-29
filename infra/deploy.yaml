@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cicd-deployment
+  name: app-deployment
   labels:
     app: cicd
 spec:

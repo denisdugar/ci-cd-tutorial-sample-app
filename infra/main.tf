@@ -1,6 +1,6 @@
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  name    = "eks-vpc"
+  name    = var.vpc_name
   cidr    = "10.0.0.0/16"
   azs             = ["us-east-1a", "us-east-1b"]
   public_subnets  = ["10.0.1.0/24", "10.0.2.0/24"]
@@ -40,8 +40,8 @@ resource "aws_vpc_security_group_egress_rule" "main" {
   ip_protocol       = "-1"
 }
 
-resource "aws_iam_role" "ec2_ssm_ecr_role" {
-  name               = "ec2-ssm-ecr-role"
+resource "aws_iam_role" "ec2_role" {
+  name               = "ec2-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -57,50 +57,38 @@ resource "aws_iam_role" "ec2_ssm_ecr_role" {
   })
 }
 
+resource "aws_iam_role_policy_attachment" "attach_sm_full_access" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+}
+
 resource "aws_iam_role_policy_attachment" "attach_ssm" {
-  role       = aws_iam_role.ec2_ssm_ecr_role.name
+  role       = aws_iam_role.ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_role_policy_attachment" "attach_ecr" {
-  role       = aws_iam_role.ec2_ssm_ecr_role.name
+  role       = aws_iam_role.ec2_role.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
 }
 
 resource "aws_iam_instance_profile" "ec2_ssm_ecr_profile" {
-  name = "ec2-ssm-ecr-profile"
-  role = aws_iam_role.ec2_ssm_ecr_role.name
+  name = "ec2-profile"
+  role = aws_iam_role.ec2_role.name
 }
 
 resource "aws_instance" "web" {
   instance_type = "t3.medium"
   ami           = "ami-084568db4383264d4"
   subnet_id     = module.vpc.public_subnets[0]
-  iam_instance_profile = "ec2-ssm-ecr-profile"
+  iam_instance_profile = "ec2-profile"
   vpc_security_group_ids = [aws_security_group.jenkins.id]
-  user_data     = <<EOF
-#!/bin/bash
-sudo apt update
-sudo apt install fontconfig openjdk-21-jre -y
-sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
-echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc]" https://pkg.jenkins.io/debian-stable binary/ | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
-sudo apt-get update
-sudo apt-get install jenkins -y
-sudo systemctl enable jenkins
-sed -i 's/-Djava.net.preferIPv4Stack=true/-Djava.net.preferIPv4Stack=true -Djenkins.install.runSetupWizard=false/g' /etc/default/jenkins
-echo "2.0" > /var/lib/jenkins/jenkins.install.UpgradeWizard.state
-mkdir /var/lib/jenkins/init.groovy.d
-sudo apt install unzip
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
-aws ssm get-parameter \
-    --name "jenkins-user" \
-    --with-decryption \
-    --query "Parameter.Value" \
-    --output text > /var/lib/jenkins/init.groovy.d/basic-security.groovy
-sudo systemctl restart jenkins
-EOF
+  user_data     = templatefile("user_data.sh",
+    {
+      secret  = var.jenkins_secret_name
+      parameter   = var.ssm_parameter_name
+    }
+  )
   tags = {
     Name = "jenkins"
   }

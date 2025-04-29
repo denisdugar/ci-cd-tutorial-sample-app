@@ -1,11 +1,11 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: jenkins
+  name: app
   namespace: argocd
   annotations:
     argocd-image-updater.argoproj.io/git-branch: master
-    argocd-image-updater.argoproj.io/image-list: jenkins=denisdugar/cicd-test
+    argocd-image-updater.argoproj.io/image-list: app=<image>
     argocd-image-updater.argoproj.io/write-back-method: git
     argocd-image-updater.argoproj.io/write-back-target: "kustomization"
     argocd-image-updater.argoproj.io/jenkins.update-strategy: newest-build
@@ -16,9 +16,9 @@ spec:
       prune:      true
       selfHeal:   true
   source:
-    repoURL: https://github.com/denisdugar/ci-cd-tutorial-sample-app.git
+    repoURL: <github_url>
     targetRevision: HEAD
-    path: infra
+    path: <path>
     kustomize: {}
   destination:
     server: https://kubernetes.default.svc

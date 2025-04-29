@@ -1,19 +1,19 @@
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
-  name: jenkins-eks-cluster
+  name: app-cluster
   region: us-east-1
 iam:
   withOIDC: true
 vpc:
-  id: "vpc-021614eee5847c076"
+  id: "<vpc-id>"
   subnets:
     private:
-      us-east-1a: { id: "subnet-010564c8734ed04db" }
-      us-east-1b: { id: "subnet-0be8c34bd1acae729" }
+      us-east-1a: { id: "<pr_sub_id>" }
+      us-east-1b: { id: "<pr_sub_id>" }
     public:
-      us-east-1a: { id: "subnet-03e5de217b1229996" }
-      us-east-1b: { id: "subnet-08a657656a4e2a54a" }
+      us-east-1a: { id: "<pub_sub_id>" }
+      us-east-1b: { id: "<pub_sub_id>" }
 nodeGroups:
   - name: ng-default
     instanceType: t3.medium
