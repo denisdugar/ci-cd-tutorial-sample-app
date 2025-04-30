@@ -6,6 +6,6 @@ metadata:
   labels:
     argocd.argoproj.io/secret-type: repository
 stringData:
-  url: <github_url>
-  username: <username>
+  url: https://github.com/denisdugar/ci-cd-tutorial-sample-app.git
+  username: denisdugar
   password: <git_tocken>
