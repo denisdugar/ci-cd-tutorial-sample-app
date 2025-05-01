@@ -1,28 +1,37 @@
+# create secret with needed username and password for jenkins. Create parameter in parameter group with the script for creating new user. Add new names for tfvars file
 terraform apply --auto-approve
 #setup jenkins:
 # create 2 pipelines and creds for dockerhub
 # change clusterconfig file with new network
 eksctl create cluster -f cluster.yaml
+# creating config file with docker creds
 docker login
 kubectl create secret generic regcred --from-file=.dockerconfigjson=/home/denis/.docker/config.json --type=kubernetes.io/dockerconfigjson
+# create deploy with service
 kubectl apply -k .
+# add adgocd to cluster
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
-# next step only if you don't install argocd cli before
+# install argocd cli
 curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
 chmod +x argocd
 sudo mv argocd /usr/local/bin/
 #################################
+
+# getting admin password for argocd
 argocd admin initial-password -n argocd
-# give argocd access to github repo using ui
+# create application in argocd
 kubectl apply -f application.yaml
+# add argocd-image-updater
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/stable/manifests/install.yaml
+# create Dockerhub creds secret for argocd-image-updater
 kubectl create -n argocd secret docker-registry dockerhub-secret \
   --docker-username someuser \
   --docker-password s0m3p4ssw0rd \
   --docker-email abc@example.com \
   --docker-server "https://registry-1.docker.io"
+# update argocd-image-updater config map to add dockerhub creds
 kubectl edit cm -n argocd argocd-image-updater-config
 data:
   log.level: debug
@@ -34,6 +43,7 @@ data:
       credentials: pullsecret:argocd/dockerhub-secret
       defaultns: denisdugar
       default: true
+# add git creds to argocd-image-updater for pushing updates
 kubectl create secret generic image-updater-git-cred \
   --namespace=argocd \
   --from-literal=url=https://github.com/denisdugar/ci-cd-tutorial-sample-app.git \
@@ -41,6 +51,8 @@ kubectl create secret generic image-updater-git-cred \
   --from-literal=password=<github_token> \
   --labels=argocd.argoproj.io/secret-type=repository
 
-
+# restart argocd-image-updater deploy for applying updates
 kubectl -n argocd rollout restart deployment argocd-image-updater
+
+# check argocd-image-updater logs for information about errors
 kubectl logs -n argocd deployment/argocd-image-updater -f
