@@ -10,7 +10,7 @@ pipeline {
       steps {
         // делаем «реальный» checkout и собираем changelog
         git url: 'https://github.com/denisdugar/ci-cd-tutorial-sample-app.git',
-            branch: '*/master',
+            branch: 'master',
             changelog: true,
             poll: false
       }
