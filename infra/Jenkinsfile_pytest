@@ -6,9 +6,33 @@ pipeline {
     }
   }
   stages {
-    stage('Gitclone & Validate Commit') {
+    stage('Checkout') {
       steps {
-        git 'https://github.com/denisdugar/ci-cd-tutorial-sample-app.git'
+        // делаем «реальный» checkout и собираем changelog
+        git url: 'https://github.com/denisdugar/ci-cd-tutorial-sample-app.git',
+            branch: '*/master',
+            changelog: true,
+            poll: false
+      }
+    }
+    stage('Show commit info') {
+      steps {
+        script {
+          def lastMsg    = ''
+          def lastAuthor = ''
+          // проходимся по всем changeSets (обычно один)
+          for (changeSet in currentBuild.changeSets) {
+            for (entry in changeSet.items) {
+              lastMsg    = entry.msg
+              lastAuthor = entry.author.fullName
+            }
+          }
+          if (lastMsg) {
+            echo "Последний коммит от ${lastAuthor}: «${lastMsg}»"
+          } else {
+            echo "Изменений не найдено."
+          }
+        }
       }
     }
     stage('Test') {
