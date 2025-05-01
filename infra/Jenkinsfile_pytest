@@ -6,25 +6,23 @@ pipeline {
     }
   }
   stages {
+    stage('Init Git safe.directory') {
+      steps {
+        // помечаем текущий workspace «безопасным»
+        sh 'git config --global --add safe.directory \"${WORKSPACE}\"'
+      }
+    }
     stage('Gitclone & Validate Commit') {
       steps {
-        // Сначала клонируем репозиторий
         git 'https://github.com/denisdugar/ci-cd-tutorial-sample-app.git'
-
-        // Затем проверяем сообщение последнего коммита
         script {
-          def commitMsg = sh(
-            script: "git log -1 --pretty=%B",
-            returnStdout: true
-          ).trim()
-
+          def commitMsg = sh(script: "git log -1 --pretty=%B", returnStdout: true).trim()
           if (commitMsg == 'build: automatic update of app') {
             error("Forbidden commit message detected: '${commitMsg}'. Failing the build.")
           }
         }
       }
     }
-
     stage('Test') {
       steps {
         sh 'pip install -r requirements.txt'
