@@ -6,25 +6,14 @@ pipeline {
     }
   }
   stages {
-    stage('Init Git safe.directory') {
-      steps {
-        // помечаем текущий workspace «безопасным»
-        sh 'git config --global --add safe.directory \"${WORKSPACE}\"'
-      }
-    }
     stage('Gitclone & Validate Commit') {
       steps {
         git 'https://github.com/denisdugar/ci-cd-tutorial-sample-app.git'
-        script {
-          def commitMsg = sh(script: "git log -1 --pretty=%B", returnStdout: true).trim()
-          if (commitMsg == 'build: automatic update of app') {
-            error("Forbidden commit message detected: '${commitMsg}'. Failing the build.")
-          }
-        }
       }
     }
     stage('Test') {
       steps {
+	sh 'echo $GIT_COMMIT"
         sh 'pip install -r requirements.txt'
         sh 'python -m unittest discover'
       }
