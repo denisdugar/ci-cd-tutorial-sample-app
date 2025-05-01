@@ -1,123 +1,169 @@
-[![Build Status](https://travis-ci.org/edonosotti/ci-cd-tutorial-sample-app.svg?branch=master)](https://travis-ci.org/edonosotti/ci-cd-tutorial-sample-app)
-[![codebeat badge](https://codebeat.co/badges/0e006c74-a2f9-4f34-9cf4-2378fb7d995a)](https://codebeat.co/projects/github-com-edonosotti-ci-cd-tutorial-sample-app-master)
-[![Maintainability](https://api.codeclimate.com/v1/badges/e14a2647843de209fd5e/maintainability)](https://codeclimate.com/github/edonosotti/ci-cd-tutorial-sample-app/maintainability)
+# CICD AWS EKS infrastructure
 
-# CD/CI Tutorial Sample Application
+## Pre-requirements
+Terraform v1.10.3
+ 
+aws-cli v2.23.13
 
-## Description
+eksctl v0.203.0
 
-This sample Python REST API application was written for a tutorial on implementing Continuous Integration and Delivery pipelines.
+kubectl v1.32.1
 
-It demonstrates how to:
-
- * Write a basic REST API using the [Flask](http://flask.pocoo.org) microframework
- * Basic database operations and migrations using the Flask wrappers around [Alembic](https://bitbucket.org/zzzeek/alembic) and [SQLAlchemy](https://www.sqlalchemy.org)
- * Write automated unit tests with [unittest](https://docs.python.org/2/library/unittest.html)
-
-Also:
-
- * How to use [GitHub Actions](https://github.com/features/actions)
-
-Related article: https://medium.com/rockedscience/docker-ci-cd-pipeline-with-github-actions-6d4cd1731030
-
-## Requirements
-
- * `Python 3.8`
- * `Pip`
- * `virtualenv`, or `conda`, or `miniconda`
-
-The `psycopg2` package does require `libpq-dev` and `gcc`.
-To install them (with `apt`), run:
-
+User in AWS with policies for creating all needed resources.
+##
+In AWS console please create a secret in Secrets Manager with the username and password you will be using for jenkins:
 ```sh
-$ sudo apt-get install libpq-dev gcc
+{"username":"<your_username>","password":"<your_password>"}
 ```
-
-## Installation
-
-With `virtualenv`:
-
+Also, create a parameter in AWS Parameter Store with the script that creates a user in Jenkins:
 ```sh
-$ python -m venv venv
-$ source venv/bin/activate
-$ pip install -r requirements.txt
+#!groovy
+
+import jenkins.model.*
+import hudson.security.*
+
+def instance = Jenkins.getInstance()
+
+def hudsonRealm = new HudsonPrivateSecurityRealm(false)
+hudsonRealm.createAccount('<your_username>','<your_password>')
+instance.setSecurityRealm(hudsonRealm)
+
+def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
+strategy.setAllowAnonymousRead(false)
+instance.setAuthorizationStrategy(strategy)
+instance.save()
 ```
+Add secret name and parameter name to terraform.tfvars file
 
-With `conda` or `miniconda`:
+## Creating infrastructure
 
+In infra directory, run terraform commands to create network infrastructure for Jenkins and EKS cluster and create Jenkins instance
 ```sh
-$ conda env create -n ci-cd-tutorial-sample-app python=3.8
-$ source activate ci-cd-tutorial-sample-app
-$ pip install -r requirements.txt
+terraform init
+terraform apply --auto-approve
 ```
 
-Optional: set the `DATABASE_URL` environment variable to a valid SQLAlchemy connection string. Otherwise, a local SQLite database will be created.
+After all resources are created, wait for 5-10 minutes for user-data script is finished. Open AWS console and go to Load Balancers. Take newly created Load Balancer URL. This is URL for your Jenkins. Your credentials are the same you paste in the script before.
 
-Initalize and seed the database:
+Login to your account and go to Managed Jenkins -> Credentials -> Global and create DockerHub credentials to your DockerHub account. 
 
+After that you can go to + New Item and create 2 pipelines
+1. PyTest - testing python code (Jenkinsfile_pytest)
+2. DockerBuild - build and push docker image to your DockerHub (Jenkinsfile_build_docker)
+   For changing default DockerHub repo please change it in Jenkinsfile_build_docker file
+
+PyTest pipeline should work everytime some updates are pushed to GitHub repo. Add this trigger in pipeline and create webhook in the settings of the GitHub repo
+the link should look like:
 ```sh
-$ flask db upgrade
-$ python seed.py
+http://<jenkins_server>/github-webhook/
 ```
+Disable ssl and choose Just the push event
 
-## Running tests
-
-Run:
-
+After all this setup, you can go to your cmd infra directory. Take outputs from terraform command with vpc and subnet ids and put them to cluster.yaml file. 
+Now you can run
 ```sh
-$ python -m unittest discover
+eksctl create cluster -f cluster.yaml
 ```
+It will take 10-30 min and create EKS cluster in AWS.
 
-## Running the application
-
-### Running locally
-
-Run the application using the built-in Flask server:
-
+After EKS cluster is created use 
 ```sh
-$ flask run
+docker login
 ```
+to login to your docker account. It will create /home/user/.docker/config.json with your docker credentials.
+We will use it to create kubernetes secret for pulling image from your private docker repo
 
-### Running on a production server
-
-Run the application using `gunicorn`:
-
+Apply kustomization file to create deployment and service. (Choose image for your repo)
 ```sh
-$ pip install -r requirements-server.txt
-$ gunicorn app:app
+kubectl apply -k .
 ```
 
-To set the listening address and port, run:
-
-```
-$ gunicorn app:app -b 0.0.0.0:8000
-```
-
-## Running on Docker
-
-Run:
-
-```
-$ docker build -t ci-cd-tutorial-sample-app:latest .
-$ docker run -d -p 8000:8000 ci-cd-tutorial-sample-app:latest
-```
-
-## Deploying to Heroku
-
-Run:
-
+Now we can add ArgoCD to EKS cluster run those commands and create LoadBalancer to reach ArgoCd UI
 ```sh
-$ heroku create
-$ git push heroku master
-$ heroku run flask db upgrade
-$ heroku run python seed.py
-$ heroku open
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
 ```
 
-or use the automated deploy feature:
+Install ArgoCD cli
+```sh
+curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+chmod +x argocd
+sudo mv argocd /usr/local/bin/
+```
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+Use this command to get admin password for login ArgoCD
+```sh
+argocd admin initial-password -n argocd
+```
 
-For more information about using Python on Heroku, see these Dev Center articles:
+Use kubectl to get LoadBalancer url for ArgoCD
+```sh
+kubectl get service -n argocd
+```
 
- - [Python on Heroku](https://devcenter.heroku.com/categories/python)
+For create application in ArgoCD use this command (change image)
+```sh
+kubectl apply -f application.yaml
+```
+
+Let's add ArgoCD image updater to our cluster for automaticaly update repo and deploy if new version apears in DockerHub repo
+```sh
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/stable/manifests/install.yaml
+```
+
+Create secret for ArgoCD image updater to have access to your DockerHub repo
+```sh
+kubectl create -n argocd secret docker-registry dockerhub-secret \
+  --docker-username someuser \
+  --docker-password s0m3p4ssw0rd \
+  --docker-email abc@example.com \
+  --docker-server "https://registry-1.docker.io"
+```
+
+Update Argocd image updater config map
+```sh
+kubectl edit cm -n argocd argocd-image-updater-config
+```
+
+And add data to use your DockerHub repo with your creds
+```sh
+data:
+  log.level: debug
+  registries.conf: |
+    registries:
+    - name: Docker Hub
+      prefix: docker.io
+      api_url: https://registry-1.docker.io
+      credentials: pullsecret:argocd/dockerhub-secret
+      defaultns: denisdugar
+      default: true
+```
+
+Add your git credentials for ArgoCd Image updater can update your GitHub repo
+```sh
+kubectl create secret generic image-updater-git-cred \
+  --namespace=argocd \
+  --from-literal=url=https://github.com/denisdugar/ci-cd-tutorial-sample-app.git \
+  --from-literal=username=denisdugar \
+  --from-literal=password=<github_token> \
+  --labels=argocd.argoproj.io/secret-type=repository
+```
+
+Restart argocd-image-updater deploy for applying updates
+```sh
+kubectl -n argocd rollout restart deployment argocd-image-updater
+```
+
+And you can check logs if there are some errors
+```sh
+kubectl logs -n argocd deployment/argocd-image-updater -f
+```
+
+##
+Now your infrastructure is ready. Every time someone will push updates to the repo it will run Jenkins pipeline update DockerHub repo and ArgoCD image updater will check that and update kustomization file with new image tag. After that ArgoCD will update your current EKS infrastructure with new image.
+
+
+## Infrastructure diagram 
+![k8s_argocd drawio (2)](https://github.com/user-attachments/assets/06696961-a9cb-4af9-ac1d-8882f262852e)
+
