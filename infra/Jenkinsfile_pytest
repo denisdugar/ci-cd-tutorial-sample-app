@@ -13,7 +13,7 @@ pipeline {
     }
     stage('Test') {
       steps {
-	sh 'echo $GIT_COMMIT"
+	sh 'echo $GIT_COMMIT'
         sh 'pip install -r requirements.txt'
         sh 'python -m unittest discover'
       }
