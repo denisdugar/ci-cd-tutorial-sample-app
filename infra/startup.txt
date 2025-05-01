@@ -1,7 +1,6 @@
 terraform apply --auto-approve
 #setup jenkins:
-# install Docker plugin and set up installer
-# create 2 pipelines
+# create 2 pipelines and creds for dockerhub
 # change clusterconfig file with new network
 eksctl create cluster -f cluster.yaml
 docker login
@@ -35,7 +34,13 @@ data:
       credentials: pullsecret:argocd/dockerhub-secret
       defaultns: denisdugar
       default: true
-# add tocken to git-creds.yaml
-kubectl apply -f git-creds.yaml
+kubectl create secret generic image-updater-git-cred \
+  --namespace=argocd \
+  --from-literal=url=https://github.com/denisdugar/ci-cd-tutorial-sample-app.git \
+  --from-literal=username=denisdugar \
+  --from-literal=password=<github_token> \
+  --labels=argocd.argoproj.io/secret-type=repository
+
+
 kubectl -n argocd rollout restart deployment argocd-image-updater
 kubectl logs -n argocd deployment/argocd-image-updater -f
