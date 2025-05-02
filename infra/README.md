@@ -45,14 +45,14 @@ terraform apply --auto-approve
 
 After all resources are created, wait for 5-10 minutes for user-data script is finished. Open AWS console and go to Load Balancers. Take newly created Load Balancer URL. This is URL for your Jenkins. Your credentials are the same you paste in the script before.
 
-Login to your account and go to Managed Jenkins -> Credentials -> Global and create DockerHub credentials to your DockerHub account. 
+Login to your account and go to Managed Jenkins -> Credentials -> Global and create DockerHub credentials to your DockerHub account. Create it with id "dockerhub_id", it will be used in pipeline. 
 
 After that you can go to + New Item and create 2 pipelines
 1. PyTest - testing python code (Jenkinsfile_pytest)
 2. DockerBuild - build and push docker image to your DockerHub (Jenkinsfile_build_docker)
    For changing default DockerHub repo please change it in Jenkinsfile_build_docker file
 
-PyTest pipeline should work everytime some updates are pushed to GitHub repo. Add this trigger in pipeline and create webhook in the settings of the GitHub repo
+PyTest pipeline should work every time some updates are pushed to the GitHub repo. Add this trigger in the pipeline and create a webhook in the settings of the GitHub repo
 the link should look like:
 ```sh
 http://<jenkins_server>/github-webhook/
@@ -66,11 +66,11 @@ eksctl create cluster -f cluster.yaml
 ```
 It will take 10-30 min and create EKS cluster in AWS.
 
-After EKS cluster is created use 
+After EKS cluster is created, use 
 ```sh
 docker login
 ```
-to login to your docker account. It will create /home/user/.docker/config.json with your docker credentials.
+to log in to your docker account. It will create /home/user/.docker/config.json with your docker credentials.
 We will use it to create kubernetes secret for pulling image from your private docker repo
 
 Apply kustomization file to create deployment and service. (Choose image for your repo)
@@ -78,7 +78,7 @@ Apply kustomization file to create deployment and service. (Choose image for you
 kubectl apply -k .
 ```
 
-Now we can add ArgoCD to EKS cluster run those commands and create LoadBalancer to reach ArgoCd UI
+Now we can add ArgoCD to EKS cluster, run those commands, and create LoadBalancer to reach ArgoCD UI
 ```sh
 kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
@@ -92,27 +92,27 @@ chmod +x argocd
 sudo mv argocd /usr/local/bin/
 ```
 
-Use this command to get admin password for login ArgoCD
+Use this command to get admin password for logging ArgoCD
 ```sh
 argocd admin initial-password -n argocd
 ```
 
-Use kubectl to get LoadBalancer url for ArgoCD
+Use kubectl to get LoadBalancer URL for ArgoCD
 ```sh
 kubectl get service -n argocd
 ```
 
-For create application in ArgoCD use this command (change image)
+Create an application in ArgoCD, use this command (change image)
 ```sh
 kubectl apply -f application.yaml
 ```
 
-Let's add ArgoCD image updater to our cluster for automaticaly update repo and deploy if new version apears in DockerHub repo
+Let's add ArgoCD image updater to our cluster to automatically update repo and deploy if a new version appears in DockerHub repo
 ```sh
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/stable/manifests/install.yaml
 ```
 
-Create secret for ArgoCD image updater to have access to your DockerHub repo
+Create a secret for ArgoCD image updater to have access to your DockerHub repo
 ```sh
 kubectl create -n argocd secret docker-registry dockerhub-secret \
   --docker-username someuser \
@@ -121,7 +121,7 @@ kubectl create -n argocd secret docker-registry dockerhub-secret \
   --docker-server "https://registry-1.docker.io"
 ```
 
-Update Argocd image updater config map
+Update ArgoCD image updater config map
 ```sh
 kubectl edit cm -n argocd argocd-image-updater-config
 ```
@@ -140,12 +140,12 @@ data:
       default: true
 ```
 
-Add your git credentials for ArgoCd Image updater can update your GitHub repo
+Add your git credentials for ArgoCD Image updater can update your GitHub repo
 ```sh
 kubectl create secret generic image-updater-git-cred \
   --namespace=argocd \
-  --from-literal=url=https://github.com/denisdugar/ci-cd-tutorial-sample-app.git \
-  --from-literal=username=denisdugar \
+  --from-literal=url=<git_repo_url> \
+  --from-literal=username=<git_username> \
   --from-literal=password=<github_token> \
   --labels=argocd.argoproj.io/secret-type=repository
 ```
