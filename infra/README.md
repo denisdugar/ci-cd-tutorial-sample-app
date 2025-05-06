@@ -175,3 +175,12 @@ Now your infrastructure is ready. Every time someone will push updates to the re
 
 ## Infrastructure diagram 
 ![k8s_argocd drawio (3)](https://github.com/user-attachments/assets/5968237c-72f6-4236-84d0-eea555b36d30)
+
+
+## Clean up
+```sh
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/stable/manifests/install.yaml
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+eksctl delete cluster -f cluster.yaml --disable-nodegroup-eviction
+terraform destroy --auto-approve
+```
