@@ -73,6 +73,12 @@ docker login
 to log in to your docker account. It will create /home/user/.docker/config.json with your docker credentials.
 We will use it to create kubernetes secret for pulling image from your private docker repo
 
+```sh
+kubectl create secret generic regcred \
+  --from-file=.dockerconfigjson=/home/user/.docker/config.json \
+  --type=kubernetes.io/dockerconfigjson
+```
+
 Apply kustomization file to create deployment and service. (Choose image for your repo)
 ```sh
 kubectl apply -k .
@@ -146,8 +152,11 @@ kubectl create secret generic image-updater-git-cred \
   --namespace=argocd \
   --from-literal=url=<git_repo_url> \
   --from-literal=username=<git_username> \
-  --from-literal=password=<github_token> \
-  --labels=argocd.argoproj.io/secret-type=repository
+  --from-literal=password=<github_token>
+
+kubectl label secret image-updater-git-cred \
+  --namespace=argocd \
+  argocd.argoproj.io/secret-type=repository
 ```
 
 Restart argocd-image-updater deploy for applying updates
@@ -165,5 +174,4 @@ Now your infrastructure is ready. Every time someone will push updates to the re
 
 
 ## Infrastructure diagram 
-![k8s_argocd drawio (2)](https://github.com/user-attachments/assets/06696961-a9cb-4af9-ac1d-8882f262852e)
-
+![k8s_argocd drawio (3)](https://github.com/user-attachments/assets/5968237c-72f6-4236-84d0-eea555b36d30)
