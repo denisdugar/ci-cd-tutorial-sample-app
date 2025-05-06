@@ -3,4 +3,4 @@ resources:
   - app-service.yaml
 images:
   - name: denisdugar/cicd-test
-    newTag: s2c551m1
+    newTag: 170xbo2l
