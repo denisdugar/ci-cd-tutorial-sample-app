@@ -82,6 +82,9 @@ pipeline {
                 -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
                 -Dsonar.working.directory=/tmp/sonar-scanner-work
             """
+            timeout(time: 5, unit: 'MINUTES') {
+              waitForQualityGate(abortPipeline: true)
+            }
           }
         }
       }
