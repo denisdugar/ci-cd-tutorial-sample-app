@@ -79,8 +79,7 @@ pipeline {
                 -Dsonar.sources=. \
                 -Dsonar.host.url=https://sonarcloud.io \
                 -Dsonar.login=${SONAR_TOKEN} \
-                -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-                -Dsonar.working.directory=/tmp/sonar-scanner-work
+                -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
             """
           }
         }
