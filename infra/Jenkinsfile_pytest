@@ -1,5 +1,5 @@
 pipeline {
-  agent none  // будем задавать агента на каждом этапе
+  agent any // будем задавать агента на каждом этапе
 
   environment {
     // подтянет из Jenkins Credentials (Secret text) ваш токен SonarCloud
