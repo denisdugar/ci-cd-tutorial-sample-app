@@ -70,6 +70,11 @@ pipeline {
         script {
           def scannerHome = tool 'SonarScanner'
           withSonarQubeEnv('SonarCloud') {
+            sh '''
+              mkdir -p .scannerwork
+              chmod 777 .scannerwork
+            '''
+
             sh """
               ${scannerHome}/bin/sonar-scanner \
                 -Dsonar.projectKey=denisdugar_ci-cd-tutorial-sample-app \
