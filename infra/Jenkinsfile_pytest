@@ -88,15 +88,10 @@ pipeline {
     }
 
     stage('Quality Gate') {
-      agent any
       steps {
-        script {
-          withSonarQubeEnv('SonarCloud') {
-            // ждём результат Quality Gate из SonarCloud
-            timeout(time: 5, unit: 'MINUTES') {
-              waitForQualityGate(abortPipeline: true)
-            }
-          }
+        // ждём результат Quality Gate из SonarCloud
+        timeout(time: 5, unit: 'MINUTES') {
+          waitForQualityGate(abortPipeline: true)
         }
       }
     }
