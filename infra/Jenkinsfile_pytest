@@ -1,49 +1,98 @@
 pipeline {
-  agent {
-    docker {
-      image 'python:3.9'
-      args  '--user root:root'
-    }
+  agent none  // будем задавать агента на каждом этапе
+
+  environment {
+    // подтянет из Jenkins Credentials (Secret text) ваш токен SonarCloud
+    SONAR_TOKEN = credentials('SONAR_TOKEN')
   }
+
   stages {
     stage('Checkout') {
+      agent {
+        docker {
+          image 'python:3.9'
+          args  '--user root:root'
+        }
+      }
       steps {
-        git url: 'https://github.com/denisdugar/ci-cd-tutorial-sample-app.git',
-            branch: 'master',
-            changelog: true,
-            poll: false
+        git url: 'https://github.com/denisdugar/ci-cd-tutorial-sample-app.git', branch: 'master'
       }
     }
 
-    stage('Show commit info & Validate') {
+    stage('Validate Commit') {
+      agent { label 'any' }
       steps {
         script {
-          def lastMsg    = ''
-          def lastAuthor = ''
-          
+          def lastMsg = ''
           for (changeSet in currentBuild.changeSets) {
             for (entry in changeSet.items) {
-              lastMsg    = entry.msg
-              lastAuthor = entry.author.fullName
+              lastMsg = entry.msg
             }
           }
-
-          if (lastMsg) {
-            echo "Last commit from user  ${lastAuthor}: «${lastMsg}»"
-            if (lastMsg.trim() == 'build: automatic update of app') {
-              error("Build aborted: forbidden commit message detected: '${lastMsg}'")
-            }
-          } else {
-            echo "Run next stage"
+          if (lastMsg?.trim() == 'build: automatic update of app') {
+            error("depricated commit: ${lastMsg}")
           }
         }
       }
     }
 
-    stage('Test') {
+    stage('Install & Test with Coverage') {
+      agent {
+        docker {
+          image 'python:3.9'
+          args  '--user root:root'
+        }
+      }
       steps {
         sh 'pip install -r requirements.txt'
-        sh 'python -m unittest discover'
+        // установим coverage
+        sh 'pip install coverage'
+        // запускаем тесты под coverage и генерим XML
+        sh '''
+          coverage run -m unittest discover
+          coverage xml -o coverage.xml
+        '''
+        // для отладки: покажем кратко %
+        sh 'coverage report'
+      }
+      // сохраняем артефакт отчёта, чтобы был доступен на Jenkins
+      post {
+        always {
+          archiveArtifacts artifacts: 'coverage.xml', fingerprint: true
+        }
+      }
+    }
+
+    stage('SonarCloud Analysis') {
+      // используем готовый CLI-контейнер с sonar-scanner
+      agent {
+        docker {
+          image 'sonarsource/sonar-scanner-cli:latest'
+          args  '--user root:root'
+        }
+      }
+      steps {
+        withSonarQubeEnv('SonarCloud') {
+          sh """
+            sonar-scanner \
+              -Dsonar.projectKey=denisdugar_ci-cd-tutorial-sample-app \
+              -Dsonar.organization=denisdugar \
+              -Dsonar.sources=. \
+              -Dsonar.host.url=https://sonarcloud.io \
+              -Dsonar.login=${SONAR_TOKEN} \
+              -Dsonar.python.coverage.reportPaths=coverage.xml
+          """
+        }
+      }
+    }
+
+    stage('Quality Gate') {
+      agent { label 'any' }
+      steps {
+        // ждём результат Quality Gate из SonarCloud
+        timeout(time: 5, unit: 'MINUTES') {
+          waitForQualityGate(abortPipeline: true)
+        }
       }
     }
   }
