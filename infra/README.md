@@ -1,5 +1,5 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=denisdugar_ci-cd-tutorial-sample-app&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=denisdugar_ci-cd-tutorial-sample-app)
-[![Build Status](http://jenkins-alb-445339980.us-east-1.elb.amazonaws.com/job/Test/badge/icon)](http://jenkins-alb-445339980.us-east-1.elb.amazonaws.com/job/Test)
+[![Test Build Status](http://jenkins-alb-445339980.us-east-1.elb.amazonaws.com/job/Test/badge/icon)](http://jenkins-alb-445339980.us-east-1.elb.amazonaws.com/job/Test)
 # CICD AWS EKS infrastructure
 
 ## Pre-requirements
