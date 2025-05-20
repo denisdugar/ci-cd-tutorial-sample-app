@@ -65,12 +65,7 @@ pipeline {
 
     stage('SonarCloud Analysis') {
       // используем готовый CLI-контейнер с sonar-scanner
-      agent {
-        docker {
-          image 'sonarsource/sonar-scanner-cli:latest'
-          args  '--user root:root'
-        }
-      }
+      agent any
       steps {
         withSonarQubeEnv('SonarCloud') {
           sh """
