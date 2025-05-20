@@ -1,8 +1,7 @@
 pipeline {
-  agent none // будем задавать агента на каждом этапе
+  agent none
 
   environment {
-    // подтянет из Jenkins Credentials (Secret text) ваш токен SonarCloud
     SONAR_TOKEN = credentials('SONAR_TOKEN')
   }
 
@@ -45,17 +44,13 @@ pipeline {
       }
       steps {
         sh 'pip install -r requirements.txt'
-        // установим coverage
         sh 'pip install coverage'
-        // запускаем тесты под coverage и генерим XML
         sh '''
           coverage run -m unittest discover
           coverage xml -o coverage.xml
         '''
-        // для отладки: покажем кратко %
         sh 'coverage report'
       }
-      // сохраняем артефакт отчёта, чтобы был доступен на Jenkins
       post {
         always {
           archiveArtifacts artifacts: 'coverage.xml', fingerprint: true
@@ -64,7 +59,6 @@ pipeline {
     }
 
     stage('SonarCloud Analysis') {
-      // используем готовый CLI-контейнер с sonar-scanner
       agent any
       steps {
         script {
@@ -88,7 +82,6 @@ pipeline {
 
     stage('Quality Gate') {
       steps {
-        // ждём результат Quality Gate из SonarCloud
         timeout(time: 5, unit: 'MINUTES') {
           waitForQualityGate(abortPipeline: true)
         }
