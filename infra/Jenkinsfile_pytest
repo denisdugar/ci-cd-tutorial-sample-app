@@ -20,7 +20,7 @@ pipeline {
     }
 
     stage('Validate Commit') {
-      agent { label 'any' }
+      agent any
       steps {
         script {
           def lastMsg = ''
@@ -87,7 +87,7 @@ pipeline {
     }
 
     stage('Quality Gate') {
-      agent { label 'any' }
+      agent any
       steps {
         // ждём результат Quality Gate из SonarCloud
         timeout(time: 5, unit: 'MINUTES') {
