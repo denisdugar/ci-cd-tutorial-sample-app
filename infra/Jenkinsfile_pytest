@@ -67,16 +67,19 @@ pipeline {
       // используем готовый CLI-контейнер с sonar-scanner
       agent any
       steps {
-        withSonarQubeEnv('SonarCloud') {
-          sh """
-            sonar-scanner \
-              -Dsonar.projectKey=denisdugar_ci-cd-tutorial-sample-app \
-              -Dsonar.organization=denisdugar \
-              -Dsonar.sources=. \
-              -Dsonar.host.url=https://sonarcloud.io \
-              -Dsonar.login=${SONAR_TOKEN} \
-              -Dsonar.python.coverage.reportPaths=coverage.xml
-          """
+        script {
+          def scannerHome = tool 'SonarScanner'
+          withSonarQubeEnv('SonarCloud') {
+            sh """
+              ${scannerHome}/bin/sonar-scanner \
+                -Dsonar.projectKey=denisdugar_ci-cd-tutorial-sample-app \
+                -Dsonar.organization=denisdugar \
+                -Dsonar.sources=. \
+                -Dsonar.host.url=https://sonarcloud.io \
+                -Dsonar.login=${SONAR_TOKEN} \
+                -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            """
+          }
         }
       }
     }
