@@ -9,6 +9,7 @@ metadata:
     argocd-image-updater.argoproj.io/write-back-method: git
     argocd-image-updater.argoproj.io/write-back-target: "kustomization"
     argocd-image-updater.argoproj.io/app.update-strategy: newest-build
+    notifications.argoproj.io/subscribe.on-sync-succeeded.gmail: "denisdugar@gmail.com"
 spec:
   project: default
   syncPolicy:

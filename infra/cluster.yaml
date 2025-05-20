@@ -6,14 +6,14 @@ metadata:
 iam:
   withOIDC: true
 vpc:
-  id: "vpc-0d4d5c008d27ea144"
+  id: "vpc-00d782f4a042f94bb"
   subnets:
     private:
-      us-east-1a: { id: "subnet-036a4124b25eff844" }
-      us-east-1b: { id: "subnet-000be893886695296" }
+      us-east-1a: { id: "subnet-034fcf9f7c470dca5" }
+      us-east-1b: { id: "subnet-0beb08897f9a19b9f" }
     public:
-      us-east-1a: { id: "subnet-00fa1484e58e5f243" }
-      us-east-1b: { id: "subnet-00741a33886e5e5c0" }
+      us-east-1a: { id: "subnet-02dec9551748031b0" }
+      us-east-1b: { id: "subnet-0adc45a7832fc7496" }
 nodeGroups:
   - name: ng-default
     instanceType: t3.medium

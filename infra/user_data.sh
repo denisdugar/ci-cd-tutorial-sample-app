@@ -67,7 +67,8 @@ java -jar jenkins-cli.jar -auth $username:$password -s http://localhost:8080/ in
 java -jar jenkins-cli.jar -auth $username:$password -s http://localhost:8080/ install-plugin workflow-aggregator
 java -jar jenkins-cli.jar -auth $username:$password -s http://localhost:8080/ install-plugin git
 java -jar jenkins-cli.jar -auth $username:$password -s http://localhost:8080/ install-plugin github
-
+java -jar jenkins-cli.jar -auth $username:$password -s http://localhost:8080/ install-plugin sonar
+java -jar jenkins-cli.jar -auth $username:$password -s http://localhost:8080/ install-plugin coverage-badges-extension
 
 # restart jenkins to apply all changes
 sudo systemctl restart jenkins
